@@ -149,10 +149,14 @@ public class ExtensionActiveScan extends ExtensionAdaptor implements
     public void optionsLoaded() {
     	policyManager.init();
 
-		if (View.isInitialised() && Control.getSingleton().getMode().equals(Mode.attack) &&
-				! this.getScannerParam().isAllowAttackOnStart()) {
-			// Disable attack mode for safeties sake (when running with the UI)
-   			View.getSingleton().getMainFrame().getMainToolbarPanel().setMode(Mode.standard);
+		if (Control.getSingleton().getMode().equals(Mode.attack)) {
+			if (View.isInitialised() && ! this.getScannerParam().isAllowAttackOnStart()) {
+				// Disable attack mode for safeties sake (when running with the UI)
+	   			View.getSingleton().getMainFrame().getMainToolbarPanel().setMode(Mode.standard);
+			} else {
+				// Needed to make sure the attackModeScanner starts up
+				this.attackModeScanner.sessionModeChanged(Control.getSingleton().getMode());
+			}
 		}
     }
 
