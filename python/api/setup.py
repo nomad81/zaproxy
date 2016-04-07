@@ -9,13 +9,13 @@ __docformat__ = 'restructuredtext'
 try:
     from setuptools import setup, find_packages
 except ImportError:
-    print "You must have setuptools installed to use setup.py. Exiting..."
+    print ("You must have setuptools installed to use setup.py. Exiting...")
     raise SystemExit(1)
 
 
 setup(
     name="python-owasp-zap-v2.4",
-    version="0.0.7",
+    version="0.0.8",
     description="OWASP ZAP 2.4 API client",
     long_description="OWASP Zed Attack Proxy 2.4 API python client",
     author="ZAP development team",

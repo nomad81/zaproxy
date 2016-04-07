@@ -23,28 +23,37 @@ __docformat__ = 'restructuredtext'
 
 import json
 import urllib
-from acsrf import acsrf
-from ascan import ascan
-from ajaxSpider import ajaxSpider
-from authentication import authentication
-from autoupdate import autoupdate
-from brk import brk
-from context import context
-from core import core
-from forcedUser import forcedUser
-from httpSessions import httpSessions
-from importLogFiles import importLogFiles
-from params import params
-from pnh import pnh
-from pscan import pscan
-from reveal import reveal
-from script import script
-from search import search
-from selenium import selenium
-from sessionManagement import sessionManagement
-from spider import spider
-from users import users
+import sys
+from .acsrf import acsrf
+from .ascan import ascan
+from .ajaxSpider import ajaxSpider
+from .authentication import authentication
+from .autoupdate import autoupdate
+from .brk import brk
+from .context import context
+from .core import core
+from .forcedUser import forcedUser
+from .httpSessions import httpSessions
+from .importLogFiles import importLogFiles
+from .params import params
+from .pnh import pnh
+from .pscan import pscan
+from .reveal import reveal
+from .script import script
+from .search import search
+from .selenium import selenium
+from .sessionManagement import sessionManagement
+from .spider import spider
+from .users import users
 
+if sys.version_info[0] == 2:
+    from urllib import urlopen
+elif sys.version_info[0] == 3:
+    from urllib.request import urlopen
+    from urllib import parse
+else:
+    print('Python version ' + sys.version_info[0] + ' not currently supported')
+    
 class ZapError(Exception):
     """
     Base ZAP exception.
@@ -116,8 +125,14 @@ class ZAPv2(object):
            - `args`:  all non-keyword arguments.
            - `kwargs`: all other keyword arguments.
         """
-        kwargs['proxies'] = self.__proxies
-        return urllib.urlopen(*args, **kwargs).read()
+        if sys.version_info[0] == 2:
+          kwargs['proxies'] = self.__proxies
+          return urllib.urlopen(*args, **kwargs).read()
+        else:
+          proxy = urllib.request.ProxyHandler(self.__proxies)
+          opener = urllib.request.build_opener(proxy)
+          urllib.request.install_opener(opener)
+          return urllib.request.urlopen(*args, **kwargs).readall()
 
     def status_code(self, *args, **kwargs):
       """
@@ -128,7 +143,10 @@ class ZAPv2(object):
          - `kwargs`: all other keyword arguments.
       """
       kwargs['proxies'] = self.__proxies
-      return urllib.urlopen(*args, **kwargs).getcode()
+      if sys.version_info[0] == 2:
+        return urllib.urlopen(*args, **kwargs).getcode()
+      else:
+        return urllib.request.urlopen(*args, **kwargs).getcode()
 
     def _request(self, url, get={}):
         """
@@ -136,9 +154,12 @@ class ZAPv2(object):
 
         :Parameters:
            - `url`: the url to GET at.
-           - `get`: the disctionary to turn into GET variables.
+           - `get`: the dictionary to turn into GET variables.
         """
-        return json.loads(self.urlopen(url + '?' + urllib.urlencode(get)))
+        if sys.version_info[0] == 2:
+          return json.loads(self.urlopen(url + '?' + urllib.urlencode(get)))
+        else:
+          return json.loads(self.urlopen(url + '?' + urllib.parse.urlencode(get)).decode('utf-8'))
 
     def _request_other(self, url, get={}):
         """
@@ -146,6 +167,10 @@ class ZAPv2(object):
 
         :Parameters:
            - `url`: the url to GET at.
-           - `get`: the disctionary to turn into GET variables.
+           - `get`: the dictionary to turn into GET variables.
         """
-        return self.urlopen(url + '?' + urllib.urlencode(get))
+        if sys.version_info[0] == 2:
+          return self.urlopen(url + '?' + urllib.urlencode(get))
+        else:
+          return self.urlopen(url + '?' + urllib.parse.urlencode(get))
+        

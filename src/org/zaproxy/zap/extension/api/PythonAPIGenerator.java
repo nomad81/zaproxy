@@ -39,7 +39,7 @@ public class PythonAPIGenerator {
 			"#\n" +
 			"# ZAP is an HTTP/HTTPS proxy for assessing web application security.\n" +
 			"#\n" +
-			"# Copyright 2015 the ZAP development team\n" +
+			"# Copyright 2016 the ZAP development team\n" +
 			"#\n" +
 			"# Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
 			"# you may not use this file except in compliance with the License.\n" +
@@ -188,7 +188,7 @@ public class PythonAPIGenerator {
 		if (type.equals("other")) {
 			out.write("        return ("); 
 		} else {
-			out.write("        return next("); 
+			out.write("        d = (");
 		}
 		out.write("self.zap." + method + "(self.zap." + baseUrl + " + '" + 
 				component + "/" + type + "/" + element.getName() + "/'");
@@ -197,16 +197,14 @@ public class PythonAPIGenerator {
 		if (hasParams) {
 			out.write(", ");
 			out.write(reqParams.toString());
-			out.write(")");
-			if (!type.equals("other")) {
-				out.write(".itervalues())");
-			} else {
-				out.write(")");
-			}
-		} else if (!type.equals("other")) {
-			out.write(").itervalues())");
-		} else {
-			out.write(")");
+		}
+		out.write("))\n");
+
+		if (!type.equals("other")) {
+			out.write("        try:\n");
+			out.write("            return next(d.itervalues())\n");
+			out.write("        except AttributeError:\n");
+			out.write("            return next(iter(d.values()))\n");
 		}
 		out.write("\n\n");
 		
