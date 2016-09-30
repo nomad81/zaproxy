@@ -29,16 +29,14 @@ import org.parosproxy.paros.control.Control.Mode;
 import org.parosproxy.paros.view.View;
 import org.zaproxy.zap.extension.httppanel.Message;
 
-/**
- * @deprecated (TODO add version) Use {@link BreakpointMessageHandler2} instead
- */
-public class BreakpointMessageHandler {
 
-    private static final Logger logger = Logger.getLogger(BreakpointMessageHandler.class);
+public class BreakpointMessageHandler2 {
+
+    private static final Logger logger = Logger.getLogger(BreakpointMessageHandler2.class);
     
     protected static final java.lang.Object semaphore = new java.lang.Object();
     
-    protected final BreakPanel breakPanel;
+    protected final BreakpointManagementInterface breakMgmt;
     
     protected List<BreakpointMessageInterface> enabledBreakpoints;
     
@@ -52,8 +50,8 @@ public class BreakpointMessageHandler {
 		this.enabledKeyBreakpoints = enabledKeyBreakpoints;
 	}
 
-	public BreakpointMessageHandler(BreakPanel aBreakPanel) {
-        this.breakPanel = aBreakPanel;
+	public BreakpointMessageHandler2(BreakpointManagementInterface aBreakPanel) {
+        this.breakMgmt = aBreakPanel;
     }
     
     public void setEnabledBreakpoints(List<BreakpointMessageInterface> breakpoints) {
@@ -74,16 +72,16 @@ public class BreakpointMessageHandler {
         
         // Do this outside of the semaphore loop so that the 'continue' button can apply to all queued break points
         // but be reset when the next break point is hit
-        breakPanel.breakpointHit();
+        breakMgmt.breakpointHit();
 
         synchronized(semaphore) {
-            if (breakPanel.isHoldMessage()) {
+            if (breakMgmt.isHoldMessage(aMessage)) {
                 setBreakDisplay(aMessage, true);
-                waitUntilContinue(true);
+                waitUntilContinue(aMessage, true);
             }
         }
         clearAndDisableRequest();
-        return ! breakPanel.isToBeDropped();
+        return ! breakMgmt.isToBeDropped();
     }
     
     /**
@@ -100,36 +98,38 @@ public class BreakpointMessageHandler {
         
         // Do this outside of the semaphore loop so that the 'continue' button can apply to all queued break points
         // but be reset when the next break point is hit
-        breakPanel.breakpointHit();
+        breakMgmt.breakpointHit();
 
         synchronized(semaphore) {
             //breakPanel.breakpointHit();
-            if (breakPanel.isHoldMessage()) {
+            if (breakMgmt.isHoldMessage(aMessage)) {
                 setBreakDisplay(aMessage, false);
-                waitUntilContinue(false);
+                waitUntilContinue(aMessage, false);
             }
         }
         clearAndDisableResponse();
 
-        return ! breakPanel.isToBeDropped();
+        return ! breakMgmt.isToBeDropped();
     }
     
     private void setBreakDisplay(final Message msg, boolean isRequest) {
-        setHttpDisplay(breakPanel, msg, isRequest);
-        breakPanel.breakpointDisplayed();
-        try {
-            EventQueue.invokeAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    View.getSingleton().getMainFrame().toFront();
-                }
-            });
-        } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+        setHttpDisplay(breakMgmt, msg, isRequest);
+        breakMgmt.breakpointDisplayed();
+        if (View.isInitialised()) {
+	        try {
+	            EventQueue.invokeAndWait(new Runnable() {
+	                @Override
+	                public void run() {
+	                    View.getSingleton().getMainFrame().toFront();
+	                }
+	            });
+	        } catch (Exception e) {
+	            logger.warn(e.getMessage(), e);
+	        }
         }
     }
     
-    private void setHttpDisplay(final BreakPanel breakPanel, final Message msg, final boolean isRequest) {
+    private void setHttpDisplay(final BreakpointManagementInterface breakPanel, final Message msg, final boolean isRequest) {
         try {
             EventQueue.invokeAndWait(new Runnable() {
                 @Override
@@ -143,11 +143,11 @@ public class BreakpointMessageHandler {
         
     }
     
-    private void waitUntilContinue(final boolean isRequest) {
+    private void waitUntilContinue(Message aMessage, final boolean isRequest) {
         // Note that multiple requests and responses can get built up, so pressing continue only
         // releases the current break, not all of them.
         //breakPanel.setContinue(false);
-        while (breakPanel.isHoldMessage()) {
+        while (breakMgmt.isHoldMessage(aMessage)) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -158,7 +158,7 @@ public class BreakpointMessageHandler {
             EventQueue.invokeAndWait(new Runnable() {
                 @Override
                 public void run() {
-                    breakPanel.saveMessage(isRequest);
+                    breakMgmt.saveMessage(isRequest);
                 }
             });
         } catch (Exception ie) {
@@ -218,15 +218,15 @@ public class BreakpointMessageHandler {
     }
 
 	protected boolean isBreakOnAllRequests(Message aMessage, boolean isRequest) {
-    	return isRequest && breakPanel.isBreakRequest();
+    	return isRequest && breakMgmt.isBreakRequest();
 	}
     
 	protected boolean isBreakOnAllResponses(Message aMessage, boolean isRequest) {
-    	return !isRequest && breakPanel.isBreakResponse();
+    	return !isRequest && breakMgmt.isBreakResponse();
 	}
 
 	protected boolean isBreakOnStepping(Message aMessage, boolean isRequest) {
-		return breakPanel.isStepping();
+		return breakMgmt.isStepping();
 	}
 
     protected boolean isBreakOnEnabledBreakpoint(Message aMessage, boolean isRequest, boolean onlyIfInScope) {
@@ -253,13 +253,13 @@ public class BreakpointMessageHandler {
     
 	private void clearAndDisableRequest() {
         if (EventQueue.isDispatchThread()) {
-            breakPanel.clearAndDisableRequest();
+            breakMgmt.clearAndDisableRequest();
         } else {
             try {
                 EventQueue.invokeAndWait(new Runnable() {
                     @Override
                     public void run() {
-                        breakPanel.clearAndDisableRequest();
+                        breakMgmt.clearAndDisableRequest();
                     }
                 });
             } catch (Exception e) {
@@ -270,13 +270,13 @@ public class BreakpointMessageHandler {
     
     private void clearAndDisableResponse() {
         if (EventQueue.isDispatchThread()) {
-            breakPanel.clearAndDisableResponse();
+            breakMgmt.clearAndDisableResponse();
         } else {
             try {
                 EventQueue.invokeAndWait(new Runnable() {
                     @Override
                     public void run() {
-                        breakPanel.clearAndDisableResponse();
+                        breakMgmt.clearAndDisableResponse();
                     }
                 });
             } catch (Exception e) {
@@ -284,6 +284,4 @@ public class BreakpointMessageHandler {
             }
         }
     }
-    
-    
 }

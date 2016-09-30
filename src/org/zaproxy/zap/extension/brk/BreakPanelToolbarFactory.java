@@ -1,3 +1,22 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ * 
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ * 
+ * Copyright 2016 ZAP development team
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at 
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0 
+ *   
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and 
+ * limitations under the License. 
+ */
 package org.zaproxy.zap.extension.brk;
 
 import java.awt.event.ActionEvent;
@@ -41,7 +60,7 @@ public class BreakPanelToolbarFactory {
 	private boolean cont = false;
 	private boolean step = false;
 	private boolean stepping = false;
-	private boolean toBeDropped = false;
+	private boolean drop = false;
 	private boolean isBreakRequest = false;
 	private boolean isBreakResponse = false;
 	private boolean isBreakAll = false;
@@ -250,6 +269,9 @@ public class BreakPanelToolbarFactory {
 			resetRequestSerialization(false);
 			return false;
 		}
+		if (drop) {
+			return false;
+		}
 		return true;
 	}
 
@@ -303,25 +325,27 @@ public class BreakPanelToolbarFactory {
 		}
 	}
 	
-	protected void drop() {
-        if (breakpointsParams.isConfirmDropMessage() && askForDropConfirmation() != JOptionPane.OK_OPTION) {
+	protected void setDrop(boolean isDrop) {
+        if (isDrop && breakpointsParams.isConfirmDropMessage() && 
+        		askForDropConfirmation() != JOptionPane.OK_OPTION) {
             return;
         }
-        toBeDropped = true;
-        setContinue(true);
+        drop = isDrop;
 	}
 
 	public boolean isToBeDropped() {
-		boolean drop = toBeDropped;
-		toBeDropped = false;
-		return drop;
+		if (drop) {
+			drop = false;
+			return true;
+		}
+		return false;
 	}
 
 	public void init() {
 		cont = false;
 		step = false;
 		stepping = false;
-		toBeDropped = false;
+		drop = false;
 		isBreakRequest = false;
 		isBreakResponse = false;
 		isBreakAll = false;
@@ -340,7 +364,6 @@ public class BreakPanelToolbarFactory {
 			toggleBreakAll();
 		}
 
-		toBeDropped = true;
 		setContinue(true);
 	}
 	
@@ -437,7 +460,7 @@ public class BreakPanelToolbarFactory {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            drop();
+            setDrop(true);
         }
     }
 

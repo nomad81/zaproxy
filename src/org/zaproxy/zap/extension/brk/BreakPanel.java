@@ -49,7 +49,7 @@ import org.zaproxy.zap.extension.httppanel.HttpPanelResponse;
 import org.zaproxy.zap.extension.httppanel.Message;
 import org.zaproxy.zap.extension.tab.Tab;
 
-public class BreakPanel extends AbstractPanel implements Tab {
+public class BreakPanel extends AbstractPanel implements Tab, BreakpointManagementInterface {
 
 	private static final long serialVersionUID = 1L;
 
@@ -72,7 +72,9 @@ public class BreakPanel extends AbstractPanel implements Tab {
 	private final JButton toolBarBtnDrop;
 	private final JButton toolBarBtnBreakPoint;
 	
+	private Message msg;
 	private boolean isAlwaysOnTop = false;
+	private boolean request;
 
 	/**
 	 * The break buttons shown in the main panel of the Break tab.
@@ -211,6 +213,7 @@ public class BreakPanel extends AbstractPanel implements Tab {
 		return breakToolbarFactory.isBreakRequest();
 	}
 	
+	@Override
 	public boolean isBreakResponse() {
 		return breakToolbarFactory.isBreakResponse();
 	}
@@ -223,6 +226,11 @@ public class BreakPanel extends AbstractPanel implements Tab {
 		breakToolbarFactory.breakpointHit();
 	}
 	
+	@Override
+	public boolean isHoldMessage(Message aMessage) {
+		return breakToolbarFactory.isHoldMessage();
+	}
+	
 	public boolean isHoldMessage() {
 		return breakToolbarFactory.isHoldMessage();
 	}
@@ -231,11 +239,12 @@ public class BreakPanel extends AbstractPanel implements Tab {
 		return breakToolbarFactory.isStepping();
 	}
     
-    public boolean isToBeDropped() {
+    @Override
+	public boolean isToBeDropped() {
         return breakToolbarFactory.isToBeDropped();
     }
 	
-	protected void breakpointDisplayed () {
+	public void breakpointDisplayed () {
 		final Boolean alwaysOnTopOption = breakpointsParams.getAlwaysOnTop();
 		if (alwaysOnTopOption == null || alwaysOnTopOption.booleanValue()) {
 		
@@ -277,7 +286,9 @@ public class BreakPanel extends AbstractPanel implements Tab {
 	}
 	
 	public void setMessage(Message aMessage, boolean isRequest) {
+		this.msg = aMessage;
 		CardLayout cl = (CardLayout)(panelContent.getLayout());
+		this.request = isRequest;
 
 		if (isRequest) {
             requestPanel.setMessage(aMessage, true);
@@ -289,7 +300,15 @@ public class BreakPanel extends AbstractPanel implements Tab {
 			cl.show(panelContent, RESPONSE_PANEL);
 		}
 	}
+	
+	public boolean isRequest() {
+		return this.request;
+	}
 
+	@Override
+	public Message getMessage() {
+		return msg;
+	}
 	
 	public void saveMessage(boolean isRequest) {
 		CardLayout cl = (CardLayout)(panelContent.getLayout());
@@ -309,12 +328,15 @@ public class BreakPanel extends AbstractPanel implements Tab {
 	}
 	
 	public void clearAndDisableRequest() {
+		this.msg = null;
 		requestPanel.clearView(false);
 		requestPanel.setEditable(false);
 		breakpointLeft();
 	}
 	
+	@Override
 	public void clearAndDisableResponse() {
+		this.msg = null;
 		responsePanel.clearView(false);
 		responsePanel.setEditable(false);
 		breakpointLeft();
@@ -327,14 +349,18 @@ public class BreakPanel extends AbstractPanel implements Tab {
 		}
 	}
 	
+	@Override
 	public void init() {
 		breakToolbarFactory.init();
 	}
 	
+	@Override
 	public void reset() {
+		this.msg = null;
 		breakToolbarFactory.reset();
 	}
 
+	@Override
 	public void sessionModeChanged(Mode mode) {
 		if (mode.equals(Mode.safe)) {
 			this.breakToolbarFactory.setBreakEnabled(false);
@@ -344,28 +370,37 @@ public class BreakPanel extends AbstractPanel implements Tab {
 
 	}
 
+	@Override
 	public void setBreakAllRequests(boolean brk) {
 		breakToolbarFactory.setBreakRequest(brk);
 	}
 
+	@Override
 	public void setBreakAllResponses(boolean brk) {
 		breakToolbarFactory.setBreakResponse(brk);
 	}
 
+	@Override
 	public void setBreakAll(boolean brk) {
 		breakToolbarFactory.setBreakAll(brk);
 	}
 
+	@Override
 	public void step() {
 		breakToolbarFactory.setStep(true);
 	}
 	
+	@Override
 	public void cont() {
 		breakToolbarFactory.setContinue(true);
+		breakToolbarFactory.setBreakAll(false);
+		breakToolbarFactory.setBreakRequest(false);
+		breakToolbarFactory.setBreakResponse(false);
 	}
 
+	@Override
 	public void drop() {
-		breakToolbarFactory.drop();
+		breakToolbarFactory.setDrop(true);
 	}
 
 	public void showNewBreakPointDialog() {
