@@ -169,7 +169,14 @@ public class API {
 	}
 
 	private boolean isPermittedIpAddr(HttpRequestHeader requestHeader) {
-		if (getOptionsParamApi().isPermittedIpAddress(requestHeader.getSenderAddress().getHostAddress())) {
+		if (getOptionsParamApi().isPermittedAddress(requestHeader.getSenderAddress().getHostAddress())) {
+			if (! requestHeader.getHostName().equalsIgnoreCase("zap") &&
+					! requestHeader.getHostName().equalsIgnoreCase("localhost") &&
+					!getOptionsParamApi().isPermittedAddress(requestHeader.getHostName())) {
+				logger.warn("Request to API URL " + requestHeader.getURI().toString() + " with host header " +
+						requestHeader.getHostName() + " not permitted");
+				return false;
+			}
 			return true;
 		}
 		logger.warn("Request to API URL " + requestHeader.getURI().toString() + " from " +

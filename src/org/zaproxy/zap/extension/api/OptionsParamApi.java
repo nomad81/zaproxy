@@ -45,12 +45,12 @@ public class OptionsParamApi extends AbstractParam {
 	private static final String REPORT_PERM_ERRORS = "api.reportpermerrors";
 	private static final String NONCE_TTL_IN_SECS = "api.noncettlsecs";
 	
-    private static final String PROXY_PERMITTED_ADDRS_KEY = "api.ipaddrs";
+    private static final String PROXY_PERMITTED_ADDRS_KEY = "api.addrs";
     private static final String ADDRESS_KEY = PROXY_PERMITTED_ADDRS_KEY + ".addr";
     private static final String ADDRESS_VALUE_KEY = "name";
     private static final String ADDRESS_REGEX_KEY = "regex";
     private static final String ADDRESS_ENABLED_KEY = "enabled";
-    private static final String CONFIRM_REMOVE_EXCLUDED_DOMAIN = "api.ipaddrs.confirmRemoveAddr";
+    private static final String CONFIRM_REMOVE_EXCLUDED_DOMAIN = "api.addrs.confirmRemoveAddr";
     
     private static final int DEFAULT_NONCE_TTL_IN_SECS = 5 * 60; // 5 mins
 
@@ -249,7 +249,7 @@ public class OptionsParamApi extends AbstractParam {
      * @return {@code true} if the given client address is allowed to access the API, {@code false} otherwise.
      * @since TODO Add Version
      */
-    public boolean isPermittedIpAddress(String addr) {
+    public boolean isPermittedAddress(String addr) {
         if (addr == null || addr.isEmpty()) {
             return false;
         }
