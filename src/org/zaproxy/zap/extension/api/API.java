@@ -98,7 +98,9 @@ public class API {
 	private Map<String, ApiImplementor> shortcuts = new HashMap<>();
 	
 	private Map<String, Nonce> nonces = Collections.synchronizedMap(new HashMap<String, Nonce>());
-	
+
+	private Map<String, ApiImplementor> subdomains = new HashMap<>();
+
 	/**
 	 * The options for the API.
 	 * 
@@ -230,6 +232,16 @@ public class API {
 		return false;
 	}
 	
+	private ApiImplementor getSubDomainImplementor(String url) {
+        for (Entry<String, ApiImplementor> entry : this.subdomains.entrySet()) {
+            if (url.startsWith("http:// " + entry.getKey() + "." + API_DOMAIN) ||
+                    url.startsWith("https:// " + entry.getKey() + "." + API_DOMAIN)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+	}
+	
 	public boolean handleApiRequest (HttpRequestHeader requestHeader, HttpInputStream httpIn, 
 			HttpOutputStream httpOut, boolean force) throws IOException {
 		
@@ -260,8 +272,11 @@ public class API {
 				}
 			}
 		}
-		
-		if (shortcutImpl == null && callbackImpl == null && ! url.startsWith(API_URL) && ! url.startsWith(API_URL_S) && ! force) {
+	    ApiImplementor subdomImpl = this.getSubDomainImplementor(url);
+
+		if (shortcutImpl == null && callbackImpl == null && 
+		        ! url.startsWith(API_URL) && ! url.startsWith(API_URL_S) &&
+		        subdomImpl == null && ! force) {
 			return false;
 		}
 		if (! isPermittedAddr(requestHeader)) {
@@ -301,6 +316,9 @@ public class API {
 			} else if (callbackImpl != null) {
 				// Callbacks have suitably random URLs and therefore don't require keys/nonces
 				response = callbackImpl.handleCallBack(msg);
+			} else if (subdomImpl != null) {
+			    // Subdomain implementors are expected to handle their own security
+                response = subdomImpl.handleSubdomain(msg);
 			} else {
 			
 				// Parse the query:
@@ -550,7 +568,8 @@ public class API {
 			error = true;
 		}
 		
-		if (!error && ! format.equals(Format.OTHER) && shortcutImpl == null) {
+		if (!error && ! format.equals(Format.OTHER) && 
+		        shortcutImpl == null && subdomImpl == null) {
 	    	msg.setResponseHeader(getDefaultResponseHeader(contentType));
 	    	msg.setResponseBody(response);
 	    	msg.getResponseHeader().setContentLength(msg.getResponseBody().length());
@@ -837,6 +856,11 @@ public class API {
         sb.append("Access-Control-Allow-Headers: ZAP-Header\r\n");
         sb.append("X-Frame-Options: DENY\r\n");
         sb.append("X-XSS-Protection: 1; mode=block\r\n");
+        
+        // TODO HACK!!!
+        //sb.append("Access-Control-Allow-Origin: *\r\n");
+
+        
         sb.append("X-Content-Type-Options: nosniff\r\n");
         sb.append("X-Clacks-Overhead: GNU Terry Pratchett\r\n");
         sb.append("Content-Length: ").append(contentLength).append("\r\n");
@@ -897,6 +921,14 @@ public class API {
         } catch (HttpMalformedHeaderException e) {
             logger.warn("Failed to build API error response:", e);
         }
+    }
+    
+    public void registerApiSubdomain(String subdomain, ApiImplementor implementor) {
+        this.subdomains.put(subdomain, implementor);
+    }
+
+    public void unregisterApiSubdomain(String subdomain) {
+        this.subdomains.remove(subdomain);
     }
 
     private static String getCharset(String contentType) {

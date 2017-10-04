@@ -259,13 +259,17 @@ public class BreakAPI extends ApiImplementor {
 				int alive = 0;
 				if (keepAlive > 0) {
 					contentType = "text/plain";
+                    contentType = "text/event-stream";
 				} else {
 					contentType = "text/event-stream";
 				}
 				msg.setResponseHeader(API.getDefaultResponseHeader(contentType, -1));
 				msg.getResponseHeader().setHeader(HttpHeader.CONNECTION, HttpHeader._KEEP_ALIVE);
+                msg.getResponseHeader().setHeader("Access-Control-Allow-Origin", "*");
+                msg.getResponseHeader().setHeader("Content-Security-Policy", null);
 
 				httpOut.write(msg.getResponseHeader());
+                httpOut.flush();
 				while (true) {
 					Message brkMsg = extension.getBreakpointManagementInterface().getMessage();
 					if (brkMsg != null && brkMsg instanceof HttpMessage) {
@@ -273,15 +277,17 @@ public class BreakAPI extends ApiImplementor {
 						HttpMessage httpMsg = (HttpMessage)brkMsg;
 						JSONObject jo = new JSONObject();
 						if (extension.getBreakpointManagementInterface().isRequest()) {
-							event = "httpRequest";
+							//event = "httpRequest";
+                            jo.put("type", "httpRequest");
 							jo.put("header", httpMsg.getRequestHeader().toString());
 							jo.put("body", httpMsg.getRequestBody().toString());
 						} else {
-							event = "httpResponse";
+							//event = "httpResponse";
+                            jo.put("type", "httpResponse");
 							jo.put("header", httpMsg.getResponseHeader().toString());
 							jo.put("body", httpMsg.getResponseBody().toString());
 						}
-						httpOut.write("event: " + event + "\n");
+						//httpOut.write("event: " + event + "\n");
 						httpOut.write("data: " + jo.toString() + "\n\n");
 						httpOut.flush();
 						break;
@@ -293,7 +299,7 @@ public class BreakAPI extends ApiImplementor {
 						// Ignore
 					}
 					if (keepAlive > 0 && alive > nextKeepAlive) {
-						httpOut.write("event: keepalive\n");
+						//httpOut.write("event: keepalive\n");
 						httpOut.write("data: {}\n\n");
 						httpOut.flush();
 						nextKeepAlive = alive + (keepAlive * 1000);

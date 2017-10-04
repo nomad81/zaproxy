@@ -97,7 +97,7 @@
 		<javac srcdir="${src}" destdir="${build}" source="${src.version}" target="${src.version}" includeantruntime="false" debug="true" encoding="UTF-8">
 			<compilerarg value="-Xlint:all"/>
 			<compilerarg value="-Xlint:-options"/> <!-- Otherwise fails with Java 8 -->
-			<compilerarg value="-Werror"/>
+			<!--compilerarg value="-Werror"/-->
 			<classpath>
 				<fileset dir="${dist.lib.dir}">
 					<include name="**/*.jar" />

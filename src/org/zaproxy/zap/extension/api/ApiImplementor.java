@@ -356,6 +356,16 @@ public abstract class ApiImplementor {
 		throw new ApiException (ApiException.Type.URL_NOT_FOUND, msg.getRequestHeader().getURI().toString());
 	}
 
+    /**
+     * Override if handling API subdomains
+     * @param msg the HTTP message containing the API request and response
+     * @return the API response (set in the HTTP response body)
+     * @throws ApiException if an error occurred while handling the API callback
+     */
+    public String handleSubdomain(HttpMessage msg)  throws ApiException {
+        throw new ApiException (ApiException.Type.URL_NOT_FOUND, msg.getRequestHeader().getURI().toString());
+    }
+
 	public HttpMessage handleShortcut(HttpMessage msg)  throws ApiException {
 		throw new ApiException (ApiException.Type.URL_NOT_FOUND, msg.getRequestHeader().getURI().toString());
 	}
